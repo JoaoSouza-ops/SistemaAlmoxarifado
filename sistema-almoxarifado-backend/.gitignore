@@ -1,0 +1,51 @@
+# =========================
+# 1. Python & Ambiente Virtual
+# =========================
+# Ignora arquivos compilados do Python (evita conflitos de versão)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignora as pastas de ambiente virtual (cada dev deve criar o seu)
+venv/
+env/
+.venv/
+
+# =========================
+# 2. Banco de Dados Local
+# =========================
+# NUNCA subimos o banco de dados de desenvolvimento para o repositório.
+# O banco do servidor de produção será totalmente separado.
+*.db
+*.sqlite
+*.sqlite3
+almoxarifado.db
+
+# =========================
+# 3. Segredos e Variáveis de Ambiente
+# =========================
+# Bloqueio crítico de segurança para não vazar chaves de API e senhas
+.env
+.env.*
+secrets.json
+
+# =========================
+# 4. IDEs e Ferramentas (VS Code, PyCharm, etc)
+# =========================
+# Ignora configurações pessoais da sua ferramenta de trabalho
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# 5. Sistema Operacional
+# =========================
+# Arquivos de cache gerados pelo Mac ou Windows
+.DS_Store
+Thumbs.db
+
+# =========================
+# 6. Logs e Relatórios
+# =========================
+*.log
