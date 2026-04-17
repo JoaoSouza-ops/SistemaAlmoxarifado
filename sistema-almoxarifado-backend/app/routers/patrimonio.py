@@ -1,5 +1,10 @@
 # Arquivo: app/routers/patrimonio.py
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
+from fpdf import FPDF
+
+import pandas as pd
+import io
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -10,6 +15,57 @@ router = APIRouter(
     prefix="/patrimonios",
     tags=["Patrimonios"]
 )
+
+# --- FUNÇÃO AUXILIAR DE PROCESSAMENTO (Não é um endpoint) ---
+def processar_planilha_bg(conteudo_arquivo: bytes, db: Session):
+    # Lemos os bytes do arquivo como se fosse um arquivo real usando o io.BytesIO
+    df = pd.read_csv(io.BytesIO(conteudo_arquivo)) # Para Excel seria pd.read_excel
+    
+    for _, linha in df.iterrows():
+        # Buscamos se o patrimônio já existe
+        item = db.query(PatrimonioModel).filter(PatrimonioModel.numero == str(linha['numero'])).first()
+        
+        if item:
+            # Se existe, apenas atualizamos a descrição (sem mudar setor ou número)
+            item.descricao = linha['descricao']
+        else:
+            # Se não existe, criamos um novo
+            novo_item = PatrimonioModel(
+                numero=str(linha['numero']),
+                descricao=linha['descricao'],
+                setor_atual=linha['setor']
+            )
+            db.add(novo_item)
+            
+            # Geramos o histórico inicial automático
+            historico = HistoricoModel(
+                patrimonio_numero=str(linha['numero']),
+                acao="IMPORTACAO_LOTE",
+                destino=linha['setor']
+            )
+            db.add(historico)
+    
+    db.commit()
+
+# --- ENDPOINT DE IMPORTAÇÃO ---
+@router.post("/importar", status_code=202)
+async def importar_patrimonios(
+    background_tasks: BackgroundTasks, 
+    arquivo: UploadFile = File(...), 
+    db: Session = Depends(get_db)
+):
+    # Validamos a extensão
+    if not arquivo.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Apenas arquivos .csv são aceitos no momento.")
+
+    # Lemos o conteúdo
+    conteudo = await arquivo.read()
+    
+    # Adicionamos a tarefa para rodar "escondido" enquanto respondemos ao usuário
+    background_tasks.add_task(processar_planilha_bg, conteudo, db)
+    
+    return {"mensagem": "O processamento do arquivo foi iniciado em segundo plano."}
+
 
 # --- CADASTRAR PATRIMÔNIO ---
 @router.post("/", status_code=201, response_model=PatrimonioDetalhe)
@@ -85,3 +141,68 @@ def realizar_baixa(numero: str, baixa: SolicitacaoBaixa, db: Session = Depends(g
     db.refresh(patrimonio)
     
     return {"mensagem": f"Patrimônio {numero} baixado com sucesso.", "justificativa": baixa.justificativa}
+
+
+@router.get("/{numero}/relatorio-pdf")
+def gerar_relatorio_patrimonio(numero: str, db: Session = Depends(get_db)):
+    # 1. Busca os dados no banco
+    patrimonio = db.query(PatrimonioModel).filter(PatrimonioModel.numero == numero).first()
+    if not patrimonio:
+        raise HTTPException(status_code=404, detail="Patrimônio não encontrado")
+
+    # 2. Configura o PDF
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Cabeçalho Principal com fundo cinza
+    pdf.set_fill_color(230, 230, 230)
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(190, 15, "SGM - SISTEMA DE GESTÃO MUNICIPAL", ln=True, align="C", fill=True)
+    pdf.ln(5)
+
+    # Detalhes do Patrimônio
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(190, 10, f"DETALHES DO PATRIMÔNIO: {patrimonio.numero}", ln=True)
+    pdf.set_font("Arial", "", 11)
+    pdf.cell(190, 8, f"Descrição: {patrimonio.descricao}", ln=True)
+    pdf.cell(95, 8, f"Setor Atual: {patrimonio.setor_atual}", border=0)
+    pdf.cell(95, 8, f"Status: {patrimonio.status}", ln=True)
+    pdf.ln(10)
+
+    # Tabela de Histórico - Cabeçalho
+    pdf.set_font("Arial", "B", 10)
+    pdf.set_fill_color(200, 200, 200)
+    pdf.cell(35, 8, "DATA/HORA", border=1, fill=True, align="C")
+    pdf.cell(50, 8, "AÇÃO", border=1, fill=True, align="C")
+    pdf.cell(50, 8, "ORIGEM", border=1, fill=True, align="C")
+    pdf.cell(55, 8, "DESTINO", border=1, fill=True, align="C")
+    pdf.ln()
+
+    # Tabela de Histórico - Linhas (Auditória)
+    pdf.set_font("Arial", "", 9)
+    for h in patrimonio.historicos:
+        data_formatada = h.data_hora.strftime("%d/%m/%Y %H:%M")
+        pdf.cell(35, 8, data_formatada, border=1, align="C")
+        pdf.cell(50, 8, h.acao, border=1)
+        pdf.cell(50, 8, h.origem or "---", border=1)
+        pdf.cell(55, 8, h.destino or "---", border=1)
+        pdf.ln()
+
+    # Rodapé para Assinatura
+    pdf.ln(20)
+    y_atual = pdf.get_y()
+    pdf.line(10, y_atual, 80, y_atual) # Linha horizontal
+    pdf.set_font("Arial", "I", 8)
+    pdf.cell(70, 5, "Responsável pelo Patrimônio / Almoxarifado", ln=True, align="C")
+
+    # 3. Preparação do binário para retorno
+    # bytes() converte o bytearray do FPDF2 para o formato que o FastAPI aceita sem erro 500
+    pdf_bytes = bytes(pdf.output()) 
+    
+    return Response(
+        content=pdf_bytes, 
+        media_type="application/pdf", 
+        headers={
+            "Content-Disposition": f"attachment; filename=relatorio-{numero}.pdf"
+        }
+    )
