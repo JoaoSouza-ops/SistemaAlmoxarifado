@@ -3,20 +3,23 @@ from fastapi import FastAPI
 from app.routers import board # Importa o router do board
 from app.routers import patrimonio # Importa o router de patrimonio
 from app.routers import transferencia # Importa o router de transferencias
+from app.routers import auth
 
 # Importamos o motor do banco e os modelos
 from app.database import engine
 from app.models import board as models_board # Avisos
 from app.models import patrimonio as models_patrimonio # Patrimonios
 from app.models import transferencia as models_transferencia #transferencia de patrimonios
+from app.models import usuario as models_usuario
 
 # Comando que cria as tabelas no banco de dados quando a API sobe
-models_board.Base.metadata.create_all(bind=engine) #Avisos
+models_board.Base.metadata.create_all(bind=engine) # Avisos
 models_patrimonio.Base.metadata.create_all(bind=engine) # Patrimonios
-models_transferencia.Base.metadata.create_all(bind=engine) #Patrimonios
+models_transferencia.Base.metadata.create_all(bind=engine) # Transferencia
+models_usuario.Base.metadata.create_all(bind=engine) # Usuários
 
 app = FastAPI(
-    title="API - SGM Almoxarifado",
+    title="API - Sistema Almoxarifado Patrimonios",
     description="Backend para gestão de patrimônios e transferências.",
     version="2.0.0"
 )
@@ -28,3 +31,4 @@ def health_check():
 app.include_router(board.router) #Conecta o router de Patrimonio a API
 app.include_router(patrimonio.router) # Conectar o router de patrimonio a API
 app.include_router(transferencia.router) #Conecta o router de transferencia de Patrimonios
+app.include_router(auth.router) # Conecta o router de autenticação

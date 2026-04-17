@@ -6,12 +6,15 @@ from app.database import get_db
 from app.models.patrimonio import PatrimonioModel, HistoricoModel
 from app.models.transferencia import TransferenciaModel
 from app.schemas.transferencia import SolicitacaoTransferencia, AprovacaoTransferencia
+from app.auth import verificar_permissao
 
 router = APIRouter(prefix="/transferencias", tags=["Transferencias"])
 
+PODE_OPERAR = ["ADMIN", "OPERADOR"]
+
 # --- SOLICITAR TRANSFERÊNCIA ---
 @router.post("/", status_code=201)
-def solicitar_transferencia(solicitacao: SolicitacaoTransferencia, db: Session = Depends(get_db)):
+def solicitar_transferencia(solicitacao: SolicitacaoTransferencia, db: Session = Depends(get_db), usuario=Depends(verificar_permissao(PODE_OPERAR))):
     # 1. Achamos o patrimônio
     patrimonio = db.query(PatrimonioModel).filter(PatrimonioModel.numero == solicitacao.patrimonio_numero).first()
     

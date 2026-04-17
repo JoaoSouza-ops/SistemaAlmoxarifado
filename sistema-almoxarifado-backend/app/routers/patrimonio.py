@@ -9,12 +9,20 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas.patrimonio import PatrimonioCriar, PatrimonioDetalhe, SolicitacaoBaixa
+from app.auth import obter_usuario_atual
+from app.auth import verificar_permissao
 
 from app.models.patrimonio import PatrimonioModel, HistoricoModel
+
 router = APIRouter(
     prefix="/patrimonios",
     tags=["Patrimonios"]
 )
+
+# --- PERFIS DE ACESSO RBAC ---
+ADMIN_ONLY = ["ADMIN"]
+ALL_STAFF   = ["ADMIN", "OPERADOR"]
+
 
 # --- FUNÇÃO AUXILIAR DE PROCESSAMENTO (Não é um endpoint) ---
 def processar_planilha_bg(conteudo_arquivo: bytes, db: Session):
@@ -47,12 +55,14 @@ def processar_planilha_bg(conteudo_arquivo: bytes, db: Session):
     
     db.commit()
 
+
 # --- ENDPOINT DE IMPORTAÇÃO ---
-@router.post("/importar", status_code=202)
+# POST /importar → ADMIN_ONLY (risco alto de corrupção de dados em lote)
+@router.post("/importar", status_code=202, dependencies=[Depends(verificar_permissao(ADMIN_ONLY))])
 async def importar_patrimonios(
     background_tasks: BackgroundTasks, 
     arquivo: UploadFile = File(...), 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     # Validamos a extensão
     if not arquivo.filename.endswith('.csv'):
@@ -68,7 +78,8 @@ async def importar_patrimonios(
 
 
 # --- CADASTRAR PATRIMÔNIO ---
-@router.post("/", status_code=201, response_model=PatrimonioDetalhe)
+# POST / → ADMIN_ONLY (cadastro de novos bens patrimoniais)
+@router.post("/", status_code=201, response_model=PatrimonioDetalhe, dependencies=[Depends(verificar_permissao(ADMIN_ONLY))])
 def cadastrar_patrimonio(patrimonio: PatrimonioCriar, db: Session = Depends(get_db)):
     
     # 1. Verifica se o número já existe no banco
@@ -98,8 +109,10 @@ def cadastrar_patrimonio(patrimonio: PatrimonioCriar, db: Session = Depends(get_
     
     return novo_patrimonio
 
+
 # --- BUSCAR PATRIMÔNIO (COM HISTÓRICO) ---
-@router.get("/{numero}", response_model=PatrimonioDetalhe)
+# GET /{numero} → ALL_STAFF (consulta padrão)
+@router.get("/{numero}", response_model=PatrimonioDetalhe, dependencies=[Depends(verificar_permissao(ALL_STAFF))])
 def buscar_patrimonio(numero: str, db: Session = Depends(get_db)):
     # Faz o SELECT e automaticamente traz o relacionamento de histórico
     patrimonio = db.query(PatrimonioModel).filter(PatrimonioModel.numero == numero).first()
@@ -109,8 +122,10 @@ def buscar_patrimonio(numero: str, db: Session = Depends(get_db)):
         
     return patrimonio
 
+
 # --- REALIZAR BAIXA PATRIMONIAL ---
-@router.post("/{numero}/baixas", status_code=200)
+# POST /{numero}/baixas → ADMIN_ONLY (destrutivo; exige alta responsabilidade)
+@router.post("/{numero}/baixas", status_code=200, dependencies=[Depends(verificar_permissao(ADMIN_ONLY))])
 def realizar_baixa(numero: str, baixa: SolicitacaoBaixa, db: Session = Depends(get_db)):
     
     # 1. Busca o patrimônio no banco
@@ -132,7 +147,6 @@ def realizar_baixa(numero: str, baixa: SolicitacaoBaixa, db: Session = Depends(g
         acao="BAIXA",
         origem=patrimonio.setor_atual,
         destino="DESCARTE/ARQUIVO",
-        # Podemos usar o destino ou um campo de observação para guardar a justificativa
     )
     db.add(nova_acao)
     
@@ -143,7 +157,9 @@ def realizar_baixa(numero: str, baixa: SolicitacaoBaixa, db: Session = Depends(g
     return {"mensagem": f"Patrimônio {numero} baixado com sucesso.", "justificativa": baixa.justificativa}
 
 
-@router.get("/{numero}/relatorio-pdf")
+# --- RELATÓRIO PDF ---
+# GET /{numero}/relatorio-pdf → ALL_STAFF (consulta padrão)
+@router.get("/{numero}/relatorio-pdf", dependencies=[Depends(verificar_permissao(ALL_STAFF))])
 def gerar_relatorio_patrimonio(numero: str, db: Session = Depends(get_db)):
     # 1. Busca os dados no banco
     patrimonio = db.query(PatrimonioModel).filter(PatrimonioModel.numero == numero).first()
@@ -191,12 +207,11 @@ def gerar_relatorio_patrimonio(numero: str, db: Session = Depends(get_db)):
     # Rodapé para Assinatura
     pdf.ln(20)
     y_atual = pdf.get_y()
-    pdf.line(10, y_atual, 80, y_atual) # Linha horizontal
+    pdf.line(10, y_atual, 80, y_atual)
     pdf.set_font("Arial", "I", 8)
     pdf.cell(70, 5, "Responsável pelo Patrimônio / Almoxarifado", ln=True, align="C")
 
     # 3. Preparação do binário para retorno
-    # bytes() converte o bytearray do FPDF2 para o formato que o FastAPI aceita sem erro 500
     pdf_bytes = bytes(pdf.output()) 
     
     return Response(
