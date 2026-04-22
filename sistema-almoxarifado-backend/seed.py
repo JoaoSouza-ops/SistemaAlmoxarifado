@@ -1,35 +1,34 @@
-from app.database import SessionLocal, engine, Base
+# Arquivo: seed.py
+from app.database import SessionLocal, engine
 from app.models.usuario import UsuarioModel
+from app.models import board, patrimonio, transferencia, usuario as m_usuario
 from app.auth import hash_senha
 
-def criar_operador():
-    Base.metadata.create_all(bind=engine)
-    
-    db = SessionLocal()
-    try:
-        operador_existente = db.query(UsuarioModel).filter(
-            UsuarioModel.email == "operador2@embu.sp.gov.br"
-        ).first()
-        
-        if not operador_existente:
-            print("Criando usuário operador...")
-            novo_operador = UsuarioModel(
-                nome_completo="Operador SGM",
-                email="operador@embu.sp.gov.br",
-                senha_hash=hash_senha("operador123"),
-                cargo="OPERADOR",
-                ativo=True
-            )
-            db.add(novo_operador)  # ← bug corrigido aqui
-            db.commit()
-            print("✅ Operador criado com sucesso!")
-        else:
-            print("⚠️ O usuário operador já existe no banco.")
-            
-    except Exception as e:
-        print(f"❌ Erro ao criar operador: {e}")
-    finally:
-        db.close()
+board.Base.metadata.create_all(bind=engine)
+patrimonio.Base.metadata.create_all(bind=engine)
+transferencia.Base.metadata.create_all(bind=engine)
+m_usuario.Base.metadata.create_all(bind=engine)
 
-if __name__ == "__main__":
-    criar_operador()
+db = SessionLocal()
+
+usuarios = [
+    UsuarioModel(nome_completo="Admin SGM",      email="admin@sgm.gov.br",
+                 senha_hash=hash_senha("admin123"),  cargo="ADMIN",        ativo=True),
+    UsuarioModel(nome_completo="Operador Silva",  email="operador@sgm.gov.br",
+                 senha_hash=hash_senha("op123"),     cargo="OPERADOR",     ativo=True),
+    UsuarioModel(nome_completo="Auditor Externo", email="auditor@sgm.gov.br",
+                 senha_hash=hash_senha("audit123"),  cargo="VISUALIZADOR", ativo=True),
+]
+
+for u in usuarios:
+    if not db.query(UsuarioModel).filter(UsuarioModel.email == u.email).first():
+        db.add(u)
+
+db.commit()
+
+# Print ANTES do db.close() — objetos ainda estão vinculados à sessão
+print("Seed concluído. Usuários criados:")
+for u in usuarios:
+    print(f"  {u.cargo:12} | {u.email}")
+
+db.close()

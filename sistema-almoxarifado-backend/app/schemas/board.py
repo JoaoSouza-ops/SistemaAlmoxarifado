@@ -1,15 +1,17 @@
-from pydantic import BaseModel, Field
+# Arquivo: app/schemas/board.py
+from pydantic import BaseModel, Field, ConfigDict
+from pydantic.alias_generators import to_camel
 from enum import Enum
 from typing import Optional
 
-# 1. Definimos as categorias permitidas (Isso evita que alguém digite "URGENTE" em vez de "AVISO")
 class CategoriaNota(str, Enum):
     AVISO = "AVISO"
     PENDENCIA = "PENDENCIA"
     MANUTENCAO = "MANUTENCAO"
 
-# 2. Criamos o modelo de dados da Nota
 class NotaBoard(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, alias_generator=to_camel)
+
     titulo: str = Field(..., max_length=100, description="Título da anotação operacional")
     descricao: Optional[str] = Field(None, description="Detalhes descritivos da nota")
     categoria: CategoriaNota

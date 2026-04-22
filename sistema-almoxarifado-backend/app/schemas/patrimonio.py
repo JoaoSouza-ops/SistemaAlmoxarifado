@@ -1,35 +1,53 @@
 # Arquivo: app/schemas/patrimonio.py
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
+from pydantic.alias_generators import to_camel
 from typing import List, Optional
 from datetime import datetime
 
-# Schema para mostrar o histórico (Saída de dados)
-class HistoricoBase(BaseModel):
+class CamelModel(BaseModel):
+    """Base que serializa campos snake_case → camelCase no JSON de saída."""
+    model_config = ConfigDict(
+        populate_by_name=True, 
+        alias_generator=to_camel,
+        from_attributes=True
+    )
+
+# ─── Histórico ────────────────────────────────────────────────────────────────
+class HistoricoBase(CamelModel):
     acao: str
     origem: Optional[str] = None
     destino: Optional[str] = None
-    data_hora: datetime
+    data_hora: datetime # O alias_generator já vai transformar em dataHora automaticamente
 
-    # Isso diz ao Pydantic para ler os dados direto do SQLAlchemy
-    class Config:
-        from_attributes = True
-
-# Schema para cadastrar um item novo (Entrada de dados)
-class PatrimonioCriar(BaseModel):
-    numero: str
-    descricao: str
-    setor_atual: str
-
-# Schema completo que devolve o item + a lista de históricos (Saída de dados)
-class PatrimonioDetalhe(BaseModel):
+# ─── Detalhe do patrimônio ────────────────────────────────────────────────────
+class PatrimonioDetalhe(CamelModel):
     numero: str
     descricao: str
     status: str
+    setor_atual: str  # CORREÇÃO: Deve ser snake_case para o SQLAlchemy encontrar!
+
+    # CORREÇÃO: Variável chama 'historicos' (como no banco), mas o JSON exibe 'historicoMovimentacoes'
+    historicos: List[HistoricoBase] = Field(
+        default=[], 
+        serialization_alias="historicoMovimentacoes" 
+    )
+
+# ─── Cadastro (entrada) ───────────────────────────────────────────────────────
+class PatrimonioCriar(CamelModel): # Adicionamos CamelModel aqui também
+    numero: str
+    descricao: str
     setor_atual: str
-    historicos: List[HistoricoBase] = [] # Aqui aninhamos o histórico!
 
-    class Config:
-        from_attributes = True
-
+# ─── Baixa ────────────────────────────────────────────────────────────────────
 class SolicitacaoBaixa(BaseModel):
     justificativa: str = Field(..., min_length=15, description="Motivo detalhado da baixa patrimonial")
+
+# ─── Paginação ────────────────────────────────────────────────────────────────
+class PaginacaoMeta(CamelModel): # Mudou para CamelModel
+    total_count: int  # CORREÇÃO: snake_case
+    current_page: int # CORREÇÃO: snake_case
+    next_cursor: Optional[str] = None # CORREÇÃO: snake_case
+
+class PaginatedPatrimonios(CamelModel): # Mudou para CamelModel
+    data: List[PatrimonioDetalhe]
+    meta: PaginacaoMeta
