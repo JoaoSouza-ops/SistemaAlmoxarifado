@@ -6,8 +6,8 @@ from app.database import get_db
 
 from app.models.patrimonio import PatrimonioModel, HistoricoModel
 from app.models.transferencia import TransferenciaModel
-from app.schemas.transferencia import SolicitacaoTransferencia, AprovacaoTransferencia
-from app.auth import verificar_permissao
+from app.schemas.transferencia import SolicitacaoTransferencia, AprovacaoTransferencia, SolicitacaoTransferencia, AprovacaoTransferencia, EdicaoTransferencia
+from app.auth import verificar_permissao, obter_usuario_atual
 
 router = APIRouter(prefix="/transferencias", tags=["Transferencias"])
 
@@ -109,3 +109,85 @@ def processar_aprovacao(
     ))
     db.commit()
     return {"mensagem": "Transferência concluída e registrada no histórico."}
+
+# ─── GET /transferencias/{id} ─────────────────────────────────────────────────
+@router.get("/{id}", status_code=200)
+def buscar_transferencia(
+    id: int, 
+    db: Session = Depends(get_db),
+    usuario=Depends(verificar_permissao(["patrimonio:read"]))
+):
+    transferencia = db.query(TransferenciaModel).filter(TransferenciaModel.id == id).first()
+    if not transferencia:
+        return problem(404, "Não encontrada", "A transferência solicitada não existe.", instance=f"/transferencias/{id}")
+    
+    # Devolvemos no formato do schema para o Pydantic converter para camelCase
+    return SolicitacaoTransferencia(
+        patrimonio_id=transferencia.patrimonio_numero,
+        setor_destino=transferencia.setor_destino,
+        responsavel_recebimento=transferencia.responsavel_recebimento,
+        justificativa=transferencia.justificativa,
+        numero_movimento=transferencia.numero_movimento
+    )
+
+
+# ─── PATCH /transferencias/{id} ───────────────────────────────────────────────
+@router.patch("/{id}", status_code=200)
+def editar_transferencia(
+    id: int,
+    edicao: EdicaoTransferencia,
+    request: Request,
+    db: Session = Depends(get_db),
+    usuario_atual: dict = Depends(obter_usuario_atual) # Pegamos o usuário para ler os escopos
+):
+    # Validamos se o usuário tem a permissão base de escrita
+    if "transferencia:write" not in usuario_atual.get("escopos", []):
+        return problem(403, "Acesso Negado", "Você não tem permissão para editar transferências.", instance=str(request.url))
+
+    transferencia = db.query(TransferenciaModel).filter(TransferenciaModel.id == id).first()
+    if not transferencia:
+        return problem(404, "Não encontrada", "A transferência solicitada não existe.", instance=str(request.url))
+
+    # Verifica se houve tentativa de mudar campos estruturais
+    mudanca_estrutural = any([edicao.setor_destino, edicao.responsavel_recebimento, edicao.justificativa])
+
+    if mudanca_estrutural:
+        # REGRA 409: Se não está mais pendente, bloqueia campos estruturais
+        if transferencia.status != "PENDENTE":
+            return problem(409, "Conflito de Estado", "Transferência já efetivada. Apenas o numeroMovimento pode ser alterado.", instance=str(request.url))
+        
+        # REGRA 403/422: Validar o Override Administrativo
+        if not edicao.override_admin:
+            return problem(403, "Acesso Negado", "Alterações em campos estruturais exigem overrideAdmin=true.", instance=str(request.url))
+            
+        if "admin:override" not in usuario_atual.get("escopos", []):
+            return problem(403, "Acesso Negado", "Escopo 'admin:override' necessário para forçar alterações.", instance=str(request.url))
+            
+        if not edicao.motivo_override or len(edicao.motivo_override) < 15:
+            return problem(422, "Erro de Validação", "O motivoOverride deve ter pelo menos 15 caracteres.", instance=str(request.url))
+            
+        # ✨ CORREÇÃO AQUI: Indentação puxada para fora do 'if' do erro 422!
+        # Registra o override
+        transferencia.override_admin = True
+        transferencia.motivo_override = edicao.motivo_override
+
+    # Aplica as alterações permitidas
+    if edicao.setor_destino:
+        transferencia.setor_destino = edicao.setor_destino
+    if edicao.responsavel_recebimento:
+        transferencia.responsavel_recebimento = edicao.responsavel_recebimento
+    if edicao.justificativa is not None:
+        transferencia.justificativa = edicao.justificativa
+    if edicao.numero_movimento is not None:
+        transferencia.numero_movimento = edicao.numero_movimento
+
+    db.commit()
+    
+    # Retorna o objeto atualizado
+    return SolicitacaoTransferencia(
+        patrimonio_id=transferencia.patrimonio_numero,
+        setor_destino=transferencia.setor_destino,
+        responsavel_recebimento=transferencia.responsavel_recebimento,
+        justificativa=transferencia.justificativa,
+        numero_movimento=transferencia.numero_movimento
+    )
