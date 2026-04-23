@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.exceptions import RequestValidationError
 
-
+from fastapi.middleware.cors import CORSMiddleware
 
 models_board.Base.metadata.create_all(bind=engine)
 models_patrimonio.Base.metadata.create_all(bind=engine)
@@ -33,6 +33,21 @@ app = FastAPI(
     version="2.0.0",
 )
 
+
+# ─── MIDDLEWARE: CORS (Para Integração com o Front-end) ──────────────────────
+# Durante o desenvolvimento e integração com o Lovable, deixamos as portas abertas.
+# Em produção real (GovTech), trocaríamos o "*" pelo domínio real do painel admin.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],         # Permite requisições de qualquer origem (inclusive URLs dinâmicas do Lovable)
+    allow_credentials=False,     # False é seguro pois usamos Bearer Token no Header e não Cookies
+    allow_methods=["*"],         # Permite todos os verbos (GET, POST, PATCH, DELETE, OPTIONS)
+    allow_headers=["*"],         # Permite todos os cabeçalhos (Authorization, Content-Type, etc.)
+    expose_headers=["X-Correlation-ID"] # Permite que o front-end consiga ler o nosso Correlation ID
+)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# O resto do seu código (exception_handlers, CorrelationIDMiddleware, etc) continua aqui em baixo...
 # ... (seu código app = FastAPI(...) ) ...
 
 @app.exception_handler(StarletteHTTPException)

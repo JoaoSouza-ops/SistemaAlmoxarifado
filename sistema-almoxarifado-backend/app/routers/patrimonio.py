@@ -190,3 +190,4 @@ def gerar_relatorio(numero: str, request: Request, db: Session = Depends(get_db)
 
     return Response(content=bytes(pdf.output()), media_type="application/pdf",
                     headers={"Content-Disposition": f"attachment; filename=relatorio-{numero}.pdf"})
+
