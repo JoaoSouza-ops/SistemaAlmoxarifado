@@ -38,6 +38,14 @@ usuarios = [
         cargo="VISUALIZADOR",
         ativo=True,
     ),
+
+    UsuarioModel(
+        nome_completo="Usuário Master",
+        email="master@email.com",
+        senha_hash=hash_senha("164907@"),    #← senha para teste no frontend
+        cargo="ADMIN",
+        ativo=True,
+    ),
 ]
 
 for u in usuarios:

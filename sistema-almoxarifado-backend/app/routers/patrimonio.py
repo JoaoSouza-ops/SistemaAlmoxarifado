@@ -67,7 +67,7 @@ def processar_planilha_bg(conteudo: bytes, db: Session, job_id: str):
         db.rollback()
         atualizar_job(job_id, StatusEnum.ERRO, progresso=0)
 
-
+"""
 # ─── POST /patrimonios/importacoes — CORREÇÃO: path + jobId + Location ────────
 # Contrato v2: POST /patrimonios/importacoes → 202 + Location: /v1/jobs/{id}
 @router.post("/importacoes", status_code=202,
@@ -93,7 +93,7 @@ async def importar_patrimonios(
         headers={"Location": f"/v1/jobs/{job_id}"},
         content=None,
     )
-
+"""
 
 # ─── POST /patrimonios/ — Cadastro individual (extra, fora contrato) ──────────
 @router.post("/", status_code=201, response_model=PatrimonioDetalhe,

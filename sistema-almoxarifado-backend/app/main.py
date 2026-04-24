@@ -35,14 +35,15 @@ ALLOWED_ORIGINS = [
     "http://localhost:4173",
     "http://127.0.0.1:5173",
     # "https://almoxarifado.prefeitura.gov.br",
+    "FRONTEND_URL"
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Correlation-ID", "Location"],
+    #expose_headers=["X-Correlation-ID", "Location"],
 )
 
 # ─── X-Correlation-ID ─────────────────────────────────────────────────────────
