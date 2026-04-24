@@ -71,7 +71,7 @@ def processar_planilha_bg(conteudo: bytes, db: Session, job_id: str):
 # ─── POST /patrimonios/importacoes — CORREÇÃO: path + jobId + Location ────────
 # Contrato v2: POST /patrimonios/importacoes → 202 + Location: /v1/jobs/{id}
 @router.post("/importacoes", status_code=202,
-             dependencies=[Depends(verificar_permissao(ADMIN_ONLY))])
+             dependencies=[Depends(verificar_git (ADMIN_ONLY))])
 async def importar_patrimonios(
     request: Request,
     background_tasks: BackgroundTasks,
