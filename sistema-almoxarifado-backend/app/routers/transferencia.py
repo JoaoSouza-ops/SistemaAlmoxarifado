@@ -116,7 +116,10 @@ def buscar_transferencia(
     id: int, 
     db: Session = Depends(get_db),
     usuario=Depends(verificar_permissao(["patrimonio:read"]))
-):
+    
+    ):
+
+
     transferencia = db.query(TransferenciaModel).filter(TransferenciaModel.id == id).first()
     if not transferencia:
         return problem(404, "Não encontrada", "A transferência solicitada não existe.", instance=f"/transferencias/{id}")
@@ -130,6 +133,12 @@ def buscar_transferencia(
         numero_movimento=transferencia.numero_movimento
     )
 
+
+# ─── GET /transferencias/ ─────────────────────────────────────────────────
+@router.get("/transferencias/")
+async def listar_transferencias():
+    # TODO: Implementar busca real no banco depois
+    return []
 
 # ─── PATCH /transferencias/{id} ───────────────────────────────────────────────
 @router.patch("/{id}", status_code=200)

@@ -67,11 +67,12 @@ def processar_planilha_bg(conteudo: bytes, db: Session, job_id: str):
         db.rollback()
         atualizar_job(job_id, StatusEnum.ERRO, progresso=0)
 
-"""
+
 # ─── POST /patrimonios/importacoes — CORREÇÃO: path + jobId + Location ────────
 # Contrato v2: POST /patrimonios/importacoes → 202 + Location: /v1/jobs/{id}
+# CORREÇÃO: Usar @router.post e verificar_permissao (sem espaços estranhos)
 @router.post("/importacoes", status_code=202,
-             dependencies=[Depends(verificar_git (ADMIN_ONLY))])
+             dependencies=[Depends(verificar_permissao(ADMIN_ONLY))])
 async def importar_patrimonios(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -87,13 +88,12 @@ async def importar_patrimonios(
 
     background_tasks.add_task(processar_planilha_bg, conteudo, db, job_id)
 
-    # Retorna 202 com Location conforme contrato v2
     return Response(
         status_code=202,
-        headers={"Location": f"/v1/jobs/{job_id}"},
+        headers={"Location": f"/jobs/{job_id}"},
         content=None,
     )
-"""
+
 
 # ─── POST /patrimonios/ — Cadastro individual (extra, fora contrato) ──────────
 @router.post("/", status_code=201, response_model=PatrimonioDetalhe,
