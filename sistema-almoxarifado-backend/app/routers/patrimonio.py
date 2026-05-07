@@ -1,5 +1,5 @@
 # Arquivo: app/routers/patrimonio.py
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, Request, Query
 from fastapi.responses import Response, JSONResponse
 import pandas as pd
 import io
@@ -11,11 +11,11 @@ from app.database import get_db
 from app.schemas.patrimonio import PatrimonioCriar, PatrimonioDetalhe, SolicitacaoBaixa, PaginatedPatrimonios
 from app.auth import verificar_permissao
 from app.models.patrimonio import PatrimonioModel, HistoricoModel
+from app.models.setor import SetorModel          # ← necessário para resolver sigla → ID
 from app.services.job_store import criar_job, atualizar_job, StatusEnum
 
 router = APIRouter(prefix="/patrimonios", tags=["Patrimonios"])
 
-# Escopos conforme contrato v2 — auth.py resolve quem tem cada escopo
 ADMIN_ONLY = ["patrimonio:write"]
 ALL_STAFF  = ["patrimonio:read"]
 
@@ -27,50 +27,86 @@ def problem(status: int, title: str, detail: str, instance: str = None) -> JSONR
     if instance:
         body["instance"] = instance
     return JSONResponse(status_code=status, media_type="application/problem+json", content=body)
-# ─────────────────────────────────────────────────────────────────────────────
 
 
 # ─── FUNÇÃO DE PROCESSAMENTO (background task) ───────────────────────────────
 def processar_planilha_bg(conteudo: bytes, db: Session, job_id: str):
     try:
-        atualizar_job(job_id, StatusEnum.PRO, progress=0)
+        atualizar_job(job_id, status=StatusEnum.PROCESSANDO, progresso=0)
         df = pd.read_csv(io.BytesIO(conteudo))
         total = len(df)
 
         for i, (_, linha) in enumerate(df.iterrows()):
+            # No seu banco o campo "setor" do CSV já é o ID direto do setor
+            setor_id = str(linha["setor"]).strip()
+
             item = db.query(PatrimonioModel).filter(
                 PatrimonioModel.numero == str(linha["numero"])
             ).first()
 
             if item:
-                item.descricao = linha["descricao"]
+                item.descricao   = linha["descricao"]
+                item.setor_atual = setor_id
             else:
-                novo_item = PatrimonioModel(
+                db.add(PatrimonioModel(
                     numero=str(linha["numero"]),
                     descricao=linha["descricao"],
-                    setor_atual=linha["setor"],
-                )
-                db.add(novo_item)
+                    setor_atual=setor_id,
+                ))
                 db.add(HistoricoModel(
                     patrimonio_numero=str(linha["numero"]),
                     acao="IMPORTACAO_LOTE",
-                    destino=linha["setor"],
+                    destino=setor_id,
                 ))
 
-            # Atualiza progresso a cada linha
-            atualizar_job(job_id, StatusEnum.PROCESSANDO, progresso=int((i + 1) / total * 100))
+            atualizar_job(job_id, status=StatusEnum.PROCESSANDO, progresso=int((i + 1) / total * 100))
 
         db.commit()
-        atualizar_job(job_id, StatusEnum.CONCLUIDO, progresso=100)
+        atualizar_job(job_id, status=StatusEnum.CONCLUIDO, progresso=100)
 
     except Exception as e:
+        import traceback; traceback.print_exc()
         db.rollback()
-        atualizar_job(job_id, StatusEnum.ERRO, progresso=0)
+        atualizar_job(job_id, status=StatusEnum.ERRO)
 
 
-# ─── POST /patrimonios/importacoes — CORREÇÃO: path + jobId + Location ────────
-# Contrato v2: POST /patrimonios/importacoes → 202 + Location: /v1/jobs/{id}
-# CORREÇÃO: Usar @router.post e verificar_permissao (sem espaços estranhos)
+# ─── GET /patrimonios/ — Listagem paginada por setor ─────────────────────────
+# FIX 1: esta rota estava ausente. O frontend chama listarPatrimoniosPorSetor()
+# que precisa de um endpoint GET com filtro por setor_id e paginação.
+# Retorna o mesmo shape { data, meta } que o frontend já espera.
+@router.get("/", dependencies=[Depends(verificar_permissao(ALL_STAFF))])
+def listar_patrimonios(
+    request: Request,
+    setor_id: str = Query(..., description="ID do setor para filtrar"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    offset = (page - 1) * limit
+
+    base_query = db.query(PatrimonioModel).filter(
+        PatrimonioModel.setor_atual == setor_id
+    )
+
+    total_count = base_query.count()
+
+    items = base_query.order_by(PatrimonioModel.numero).offset(offset).limit(limit).all()
+
+    # next_cursor: indica se há uma próxima página
+    has_next = (offset + limit) < total_count
+    next_cursor = str(page + 1) if has_next else None
+
+    return {
+        "data": items,
+        "meta": {
+            "totalCount":  total_count,
+            "currentPage": page,
+            "nextCursor":  next_cursor,
+        },
+    }
+
+
+# ─── POST /patrimonios/importacoes ───────────────────────────────────────────
 @router.post("/importacoes", status_code=202,
              dependencies=[Depends(verificar_permissao(ADMIN_ONLY))])
 async def importar_patrimonios(
@@ -84,7 +120,8 @@ async def importar_patrimonios(
                        instance=str(request.url))
 
     conteudo = await arquivo.read()
-    job_id   = criar_job()
+    novo_job  = criar_job()
+    job_id    = novo_job["id"]
 
     background_tasks.add_task(processar_planilha_bg, conteudo, db, job_id)
 
@@ -95,7 +132,7 @@ async def importar_patrimonios(
     )
 
 
-# ─── POST /patrimonios/ — Cadastro individual (extra, fora contrato) ──────────
+# ─── POST /patrimonios/ — Cadastro individual ─────────────────────────────────
 @router.post("/", status_code=201, response_model=PatrimonioDetalhe,
              dependencies=[Depends(verificar_permissao(ADMIN_ONLY))])
 def cadastrar_patrimonio(patrimonio: PatrimonioCriar, request: Request,
@@ -116,6 +153,8 @@ def cadastrar_patrimonio(patrimonio: PatrimonioCriar, request: Request,
 
 
 # ─── GET /patrimonios/{numero} ────────────────────────────────────────────────
+# ATENÇÃO: esta rota deve ficar APÓS o GET "/" e o POST "/importacoes",
+# caso contrário o FastAPI interpreta "importacoes" como um {numero}.
 @router.get("/{numero}", response_model=PatrimonioDetalhe,
             dependencies=[Depends(verificar_permissao(ALL_STAFF))])
 def buscar_patrimonio(numero: str, request: Request, db: Session = Depends(get_db)):
@@ -152,7 +191,7 @@ def realizar_baixa(numero: str, baixa: SolicitacaoBaixa, request: Request,
             "justificativa": baixa.justificativa}
 
 
-# ─── GET /patrimonios/{numero}/relatorio-pdf (extra) ─────────────────────────
+# ─── GET /patrimonios/{numero}/relatorio-pdf ─────────────────────────────────
 @router.get("/{numero}/relatorio-pdf",
             dependencies=[Depends(verificar_permissao(ALL_STAFF))])
 def gerar_relatorio(numero: str, request: Request, db: Session = Depends(get_db)):
@@ -190,4 +229,3 @@ def gerar_relatorio(numero: str, request: Request, db: Session = Depends(get_db)
 
     return Response(content=bytes(pdf.output()), media_type="application/pdf",
                     headers={"Content-Disposition": f"attachment; filename=relatorio-{numero}.pdf"})
-

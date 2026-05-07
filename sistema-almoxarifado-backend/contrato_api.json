@@ -1,0 +1,2153 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API - SGM Almoxarifado (Gestão de Patrimônios)",
+    "description": "API RESTful para gestão de inventário e transferências.",
+    "version": "2.1.0"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health Check",
+        "operationId": "health_check__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/board/notas": {
+      "get": {
+        "tags": [
+          "Board"
+        ],
+        "summary": "Listar Notas",
+        "operationId": "listar_notas_board_notas_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Board"
+        ],
+        "summary": "Criar Nota",
+        "operationId": "criar_nota_board_notas_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotaBoard"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/board/notas/{nota_id}": {
+      "put": {
+        "tags": [
+          "Board"
+        ],
+        "summary": "Editar Nota",
+        "description": "Atualiza os campos de uma nota existente pelo ID.",
+        "operationId": "editar_nota_board_notas__nota_id__put",
+        "parameters": [
+          {
+            "name": "nota_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Nota Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotaBoard"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Board"
+        ],
+        "summary": "Excluir Nota",
+        "description": "Remove uma nota pelo ID. Retorna 204 (sem conteúdo) em caso de sucesso.",
+        "operationId": "excluir_nota_board_notas__nota_id__delete",
+        "parameters": [
+          {
+            "name": "nota_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Nota Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patrimonios/": {
+      "get": {
+        "tags": [
+          "Patrimonios"
+        ],
+        "summary": "Listar Patrimonios",
+        "operationId": "listar_patrimonios_patrimonios__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "setor_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "ID do setor para filtrar",
+              "title": "Setor Id"
+            },
+            "description": "ID do setor para filtrar"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Patrimonios"
+        ],
+        "summary": "Cadastrar Patrimonio",
+        "operationId": "cadastrar_patrimonio_patrimonios__post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatrimonioCriar"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatrimonioDetalhe"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patrimonios/importacoes": {
+      "post": {
+        "tags": [
+          "Patrimonios"
+        ],
+        "summary": "Importar Patrimonios",
+        "operationId": "importar_patrimonios_patrimonios_importacoes_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_importar_patrimonios_patrimonios_importacoes_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/patrimonios/{numero}": {
+      "get": {
+        "tags": [
+          "Patrimonios"
+        ],
+        "summary": "Buscar Patrimonio",
+        "operationId": "buscar_patrimonio_patrimonios__numero__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "numero",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Numero"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatrimonioDetalhe"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patrimonios/{numero}/baixas": {
+      "post": {
+        "tags": [
+          "Patrimonios"
+        ],
+        "summary": "Realizar Baixa",
+        "operationId": "realizar_baixa_patrimonios__numero__baixas_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "numero",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Numero"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolicitacaoBaixa"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patrimonios/{numero}/relatorio-pdf": {
+      "get": {
+        "tags": [
+          "Patrimonios"
+        ],
+        "summary": "Gerar Relatorio",
+        "operationId": "gerar_relatorio_patrimonios__numero__relatorio_pdf_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "numero",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Numero"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transferencias/": {
+      "get": {
+        "tags": [
+          "Transferencias"
+        ],
+        "summary": "Listar Transferencias",
+        "operationId": "listar_transferencias_transferencias__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TransferenciaRead"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Transferencias Transferencias  Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Transferencias"
+        ],
+        "summary": "Solicitar Transferencia",
+        "operationId": "solicitar_transferencia_transferencias__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SolicitacaoTransferencia"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferenciaRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/transferencias/{id}/aprovacoes": {
+      "post": {
+        "tags": [
+          "Transferencias"
+        ],
+        "summary": "Processar Aprovacao",
+        "operationId": "processar_aprovacao_transferencias__id__aprovacoes_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AprovacaoTransferencia"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferenciaRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transferencias/{id}/assinaturas": {
+      "post": {
+        "tags": [
+          "Transferencias"
+        ],
+        "summary": "Assinar Transferencia",
+        "operationId": "assinar_transferencia_transferencias__id__assinaturas_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssinaturaTransferencia"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferenciaRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transferencias/{id}": {
+      "get": {
+        "tags": [
+          "Transferencias"
+        ],
+        "summary": "Buscar Transferencia",
+        "operationId": "buscar_transferencia_transferencias__id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferenciaRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Transferencias"
+        ],
+        "summary": "Editar Transferencia",
+        "operationId": "editar_transferencia_transferencias__id__patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EdicaoTransferencia"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferenciaRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/setores/{id}/patrimonios": {
+      "get": {
+        "tags": [
+          "Patrimonios"
+        ],
+        "summary": "Listar Patrimonios Por Setor",
+        "operationId": "listar_patrimonios_por_setor_setores__id__patrimonios_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Página atual",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Página atual"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Itens por página",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Itens por página"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(json|pdf|xlsx)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "json",
+              "title": "Format"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedPatrimonios"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Autenticação"
+        ],
+        "summary": "Login",
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_login_auth_login_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/usuarios/": {
+      "get": {
+        "tags": [
+          "Usuários"
+        ],
+        "summary": "Listar Usuarios",
+        "description": "Lista todos os usuários do sistema (apenas admins).",
+        "operationId": "listar_usuarios_usuarios__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UsuarioResposta"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Usuarios Usuarios  Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Usuários"
+        ],
+        "summary": "Criar Usuario",
+        "description": "Cria um novo usuário no sistema.",
+        "operationId": "criar_usuario_usuarios__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioCriar"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioResposta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/usuarios/{usuario_id}": {
+      "put": {
+        "tags": [
+          "Usuários"
+        ],
+        "summary": "Editar Usuario",
+        "description": "Edita cargo, nome, senha ou status de um usuário existente.",
+        "operationId": "editar_usuario_usuarios__usuario_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "usuario_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Usuario Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UsuarioEditar"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsuarioResposta"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "Jobs"
+        ],
+        "summary": "Consultar Job",
+        "description": "Retorna o status de um job assíncrono (ex: importação de CSV).\nChamado pelo frontend depois de receber o header Location em um 202.",
+        "operationId": "consultar_job_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/metricas": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Obter Metricas",
+        "operationId": "obter_metricas_dashboard_metricas_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/setores/": {
+      "get": {
+        "tags": [
+          "Setores"
+        ],
+        "summary": "Listar Setores",
+        "operationId": "listar_setores_setores__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SetorRead"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Setores Setores  Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Setores"
+        ],
+        "summary": "Criar Setor",
+        "operationId": "criar_setor_setores__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetorCriar"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetorRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/setores/{id}": {
+      "put": {
+        "tags": [
+          "Setores"
+        ],
+        "summary": "Atualizar Setor",
+        "operationId": "atualizar_setor_setores__id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetorAtualizar"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetorRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Setores"
+        ],
+        "summary": "Deletar Setor",
+        "operationId": "deletar_setor_setores__id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AprovacaoTransferencia": {
+        "properties": {
+          "decisao": {
+            "$ref": "#/components/schemas/DecisaoTransferencia"
+          },
+          "overrideAdmin": {
+            "type": "boolean",
+            "title": "Overrideadmin",
+            "description": "Requer o escopo admin:override no JWT",
+            "default": false
+          },
+          "motivoOverride": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 15
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivooverride"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decisao"
+        ],
+        "title": "AprovacaoTransferencia"
+      },
+      "AssinaturaTransferencia": {
+        "properties": {
+          "papel": {
+            "type": "string",
+            "title": "Papel",
+            "description": "Deve ser TRANSFERIDOR ou RECEBEDOR"
+          }
+        },
+        "type": "object",
+        "required": [
+          "papel"
+        ],
+        "title": "AssinaturaTransferencia"
+      },
+      "Body_importar_patrimonios_patrimonios_importacoes_post": {
+        "properties": {
+          "arquivo": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "Arquivo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "arquivo"
+        ],
+        "title": "Body_importar_patrimonios_patrimonios_importacoes_post"
+      },
+      "Body_login_auth_login_post": {
+        "properties": {
+          "grant_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^password$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Type"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "title": "Password"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": ""
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "format": "password",
+            "title": "Client Secret"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Body_login_auth_login_post"
+      },
+      "CategoriaNota": {
+        "type": "string",
+        "enum": [
+          "AVISO",
+          "PENDENCIA",
+          "MANUTENCAO"
+        ],
+        "title": "CategoriaNota"
+      },
+      "DecisaoTransferencia": {
+        "type": "string",
+        "enum": [
+          "APROVADA",
+          "REJEITADA"
+        ],
+        "title": "DecisaoTransferencia"
+      },
+      "EdicaoTransferencia": {
+        "properties": {
+          "setorDestino": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Setordestino",
+            "description": "UUID do setor de destino"
+          },
+          "responsavelRecebimento": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 150,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Responsavelrecebimento"
+          },
+          "justificativa": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Justificativa"
+          },
+          "numeroMovimento": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numeromovimento"
+          },
+          "overrideAdmin": {
+            "type": "boolean",
+            "title": "Overrideadmin",
+            "default": false
+          },
+          "motivoOverride": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 15
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivooverride"
+          }
+        },
+        "type": "object",
+        "title": "EdicaoTransferencia"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HistoricoBase": {
+        "properties": {
+          "acao": {
+            "type": "string",
+            "title": "Acao"
+          },
+          "origem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origem"
+          },
+          "destino": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destino"
+          },
+          "dataHora": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Datahora"
+          }
+        },
+        "type": "object",
+        "required": [
+          "acao",
+          "dataHora"
+        ],
+        "title": "HistoricoBase"
+      },
+      "JobStatus": {
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "title": "Jobid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusEnum"
+          },
+          "progress": {
+            "type": "integer",
+            "title": "Progress",
+            "default": 0
+          },
+          "createdAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Createdat"
+          },
+          "result": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "jobId",
+          "status"
+        ],
+        "title": "JobStatus"
+      },
+      "NotaBoard": {
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Titulo",
+            "description": "Título da anotação operacional"
+          },
+          "descricao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descricao",
+            "description": "Detalhes descritivos da nota"
+          },
+          "categoria": {
+            "$ref": "#/components/schemas/CategoriaNota"
+          },
+          "fixado": {
+            "type": "boolean",
+            "title": "Fixado",
+            "description": "Se true, a nota fica no topo do board",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "titulo",
+          "categoria"
+        ],
+        "title": "NotaBoard"
+      },
+      "PaginacaoMeta": {
+        "properties": {
+          "totalCount": {
+            "type": "integer",
+            "title": "Totalcount"
+          },
+          "currentPage": {
+            "type": "integer",
+            "title": "Currentpage"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "totalCount",
+          "currentPage"
+        ],
+        "title": "PaginacaoMeta"
+      },
+      "PaginatedPatrimonios": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PatrimonioDetalhe"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginacaoMeta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "meta"
+        ],
+        "title": "PaginatedPatrimonios"
+      },
+      "PatrimonioCriar": {
+        "properties": {
+          "numero": {
+            "type": "string",
+            "title": "Numero"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao"
+          },
+          "setorAtual": {
+            "type": "string",
+            "title": "Setoratual"
+          }
+        },
+        "type": "object",
+        "required": [
+          "numero",
+          "descricao",
+          "setorAtual"
+        ],
+        "title": "PatrimonioCriar"
+      },
+      "PatrimonioDetalhe": {
+        "properties": {
+          "numero": {
+            "type": "string",
+            "title": "Numero"
+          },
+          "descricao": {
+            "type": "string",
+            "title": "Descricao"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "setorAtual": {
+            "type": "string",
+            "title": "Setoratual"
+          },
+          "historicoMovimentacoes": {
+            "items": {
+              "$ref": "#/components/schemas/HistoricoBase"
+            },
+            "type": "array",
+            "title": "Historicomovimentacoes",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "numero",
+          "descricao",
+          "status",
+          "setorAtual"
+        ],
+        "title": "PatrimonioDetalhe"
+      },
+      "SetorAtualizar": {
+        "properties": {
+          "nome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nome"
+          },
+          "sigla": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sigla"
+          }
+        },
+        "type": "object",
+        "title": "SetorAtualizar"
+      },
+      "SetorCriar": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 3,
+            "title": "Nome",
+            "description": "Nome completo do setor"
+          },
+          "sigla": {
+            "type": "string",
+            "minLength": 2,
+            "title": "Sigla",
+            "description": "Sigla do setor"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "ID único. Ex: SETOR-RH"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "sigla",
+          "id"
+        ],
+        "title": "SetorCriar"
+      },
+      "SetorRead": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "minLength": 3,
+            "title": "Nome",
+            "description": "Nome completo do setor"
+          },
+          "sigla": {
+            "type": "string",
+            "minLength": 2,
+            "title": "Sigla",
+            "description": "Sigla do setor"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "sigla",
+          "id"
+        ],
+        "title": "SetorRead"
+      },
+      "SolicitacaoBaixa": {
+        "properties": {
+          "justificativa": {
+            "type": "string",
+            "minLength": 15,
+            "title": "Justificativa",
+            "description": "Motivo detalhado da baixa patrimonial"
+          }
+        },
+        "type": "object",
+        "required": [
+          "justificativa"
+        ],
+        "title": "SolicitacaoBaixa"
+      },
+      "SolicitacaoTransferencia": {
+        "properties": {
+          "patrimonioId": {
+            "type": "string",
+            "pattern": "\\d{5,6}$",
+            "title": "Patrimonioid",
+            "description": "Formatos aceitos: 12345 123456 ou AAAA-123456"
+          },
+          "setorDestino": {
+            "type": "string",
+            "title": "Setordestino",
+            "description": "ID do setor de destino"
+          },
+          "responsavelRecebimento": {
+            "type": "string",
+            "title": "Responsavelrecebimento",
+            "description": "Nome do responsável no destino"
+          },
+          "justificativa": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500,
+                "minLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Justificativa",
+            "description": "Motivo"
+          },
+          "numeroMovimento": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numeromovimento",
+            "description": "Nº do movimento oficial"
+          }
+        },
+        "type": "object",
+        "required": [
+          "patrimonioId",
+          "setorDestino",
+          "responsavelRecebimento"
+        ],
+        "title": "SolicitacaoTransferencia"
+      },
+      "StatusEnum": {
+        "type": "string",
+        "enum": [
+          "PENDENTE",
+          "PROCESSANDO",
+          "CONCLUIDO",
+          "ERRO"
+        ],
+        "title": "StatusEnum"
+      },
+      "TransferenciaRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "patrimonioNumero": {
+            "type": "string",
+            "title": "Patrimonionumero"
+          },
+          "setorOrigem": {
+            "type": "string",
+            "title": "Setororigem"
+          },
+          "setorDestino": {
+            "type": "string",
+            "title": "Setordestino"
+          },
+          "responsavelRecebimento": {
+            "type": "string",
+            "title": "Responsavelrecebimento"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "dataSolicitacao": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Datasolicitacao"
+          },
+          "justificativa": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Justificativa"
+          },
+          "efetivadoEm": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Efetivadoem"
+          },
+          "numeroMovimento": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numeromovimento"
+          },
+          "assinaturaTransferidorEm": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assinaturatransferidorem"
+          },
+          "assinaturaRecebedorEm": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assinaturarecebedorem"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "patrimonioNumero",
+          "setorOrigem",
+          "setorDestino",
+          "responsavelRecebimento",
+          "status",
+          "dataSolicitacao"
+        ],
+        "title": "TransferenciaRead"
+      },
+      "UsuarioCriar": {
+        "properties": {
+          "nome_completo": {
+            "type": "string",
+            "title": "Nome Completo"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "senha": {
+            "type": "string",
+            "title": "Senha"
+          },
+          "cargo": {
+            "type": "string",
+            "title": "Cargo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome_completo",
+          "email",
+          "senha",
+          "cargo"
+        ],
+        "title": "UsuarioCriar"
+      },
+      "UsuarioEditar": {
+        "properties": {
+          "nome_completo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nome Completo"
+          },
+          "cargo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cargo"
+          },
+          "nova_senha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nova Senha"
+          },
+          "ativo": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ativo"
+          }
+        },
+        "type": "object",
+        "title": "UsuarioEditar"
+      },
+      "UsuarioResposta": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "nome_completo": {
+            "type": "string",
+            "title": "Nome Completo"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "cargo": {
+            "type": "string",
+            "title": "Cargo"
+          },
+          "ativo": {
+            "type": "boolean",
+            "title": "Ativo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nome_completo",
+          "email",
+          "cargo",
+          "ativo"
+        ],
+        "title": "UsuarioResposta"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "OAuth2PasswordBearer": {
+        "type": "oauth2",
+        "flows": {
+          "password": {
+            "scopes": {},
+            "tokenUrl": "auth/login"
+          }
+        }
+      }
+    }
+  }
+}
