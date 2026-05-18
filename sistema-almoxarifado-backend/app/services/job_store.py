@@ -1,7 +1,8 @@
 # app/services/job_store.py
 from enum import Enum
 from datetime import datetime, timezone
-import uuid
+from uuid import uuid4
+
 
 # Enum em português conforme esperado pelo router
 class StatusEnum(str, Enum):
@@ -11,12 +12,12 @@ class StatusEnum(str, Enum):
     ERRO = "ERRO"
 
 # Dicionário global em memória
-_jobs = {}
+_jobs: dict[str, dict] = {}
 
 def criar_job() -> str:
     """Cria um novo Job e devolve o seu ID único"""
-    job_id = str(uuid.uuid4())
-    _jobs[job_id] = {
+    job_id = str(uuid4())
+    job = {
         "id": job_id,
         "status": StatusEnum.PENDENTE,
         "progresso": 0,
@@ -24,19 +25,13 @@ def criar_job() -> str:
         "resultado": None,
         "erro": None
     }
-    return job_id
+    _jobs[job_id] = job
+    return job
 
-def atualizar_job(job_id: str, status: StatusEnum = None, progresso: int = None, resultado: dict = None, erro: str = None):
-    """Atualiza o estado e o progresso de um Job existente"""
+def atualizar_job(job_id: str, **kwargs) -> None:
+    """Atualiza campos de um Job existente"""
     if job_id in _jobs:
-        if status:
-            _jobs[job_id]["status"] = status
-        if progresso is not None:
-            _jobs[job_id]["progresso"] = progresso
-        if resultado:
-            _jobs[job_id]["resultado"] = resultado
-        if erro:
-            _jobs[job_id]["erro"] = erro
+        _jobs[job_id].update(kwargs)
 
 def buscar_job(job_id: str) -> dict:
     """Devolve os dados do Job ou None se não existir"""

@@ -1,4 +1,3 @@
-numero,descricao,setor
-2026-5001,Cadeira Ergonomica,Administrativo
-2026-5002,Monitor 24 polegadas,TI
-2026-5003,Impressora Laser,RH
+numero,descricao,setor,status
+100123,Notebook Dell Latitude 3420,CRAS_TESTE2,ATIVO
+100124,Cadeira de Escritório Ergonômica,CRAS_TESTE2,ATIVO

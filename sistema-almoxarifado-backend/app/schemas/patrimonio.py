@@ -33,10 +33,12 @@ class PatrimonioDetalhe(CamelModel):
     )
 
 # ─── Cadastro (entrada) ───────────────────────────────────────────────────────
-class PatrimonioCriar(CamelModel): # Adicionamos CamelModel aqui também
-    numero: str
-    descricao: str
-    setor_atual: str
+class PatrimonioCriar(CamelModel):
+    numero:      str = Field(..., min_length=5, max_length=10,
+                             pattern=r"^\d{5,6}$",
+                             description="5 ou 6 dígitos numéricos")
+    descricao:   str = Field(..., min_length=3, max_length=200)
+    setor_atual: str = Field(..., min_length=1, max_length=100)
 
 # ─── Baixa ────────────────────────────────────────────────────────────────────
 class SolicitacaoBaixa(BaseModel):

@@ -2,8 +2,10 @@
 from datetime import datetime, timedelta, timezone
 from typing import List
 from jose import JWTError, jwt
+from fastapi import Depends, status
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import Depends, HTTPException, status
+from fastapi.exceptions import HTTPException
 import bcrypt
 import os
 
@@ -13,18 +15,25 @@ SECRET_KEY                  = os.getenv("SECRET_KEY", "uma_chave_muito_segura_da
 ALGORITHM                   = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
+# FIX C: adicionados escopos de assinatura referenciados pelo frontend em
+# auth.hasScope("transferencia:sign:transferidor") e auth.hasScope("transferencia:sign:recebedor").
+# Sem eles, os botões "Assinar transferidor" e "Assinar recebedor" NUNCA aparecem
+# para nenhum usuário — mesmo após aprovação da transferência.
 ESCOPOS_POR_CARGO = {
     "ADMIN": [
         "patrimonio:read",
         "patrimonio:write",
         "transferencia:write",
         "transferencia:approve",
+        "transferencia:sign:transferidor",   # ← adicionado
+        "transferencia:sign:recebedor",      # ← adicionado
         "admin:override",
     ],
     "OPERADOR": [
         "patrimonio:read",
         "transferencia:write",
-        "transferencia:approve",
+        "transferencia:sign:transferidor",   # ← adicionado
+        "transferencia:sign:recebedor",      # ← adicionado
     ],
     "VISUALIZADOR": [
         "patrimonio:read",
@@ -66,6 +75,7 @@ def obter_usuario_atual(token: str = Depends(oauth2_scheme)) -> dict:
         raise erro
 
 
+
 def verificar_permissao(escopos_exigidos: List[str]):
     def verificador(usuario: dict = Depends(obter_usuario_atual)):
         escopos_do_usuario: List[str] = usuario.get("escopos", [])
@@ -76,9 +86,10 @@ def verificar_permissao(escopos_exigidos: List[str]):
                     "type":   "https://api.almoxarifado.gov.br/erros/403",
                     "title":  "Sem permissão",
                     "status": 403,
-                    "detail": f"Exige um dos escopos: {escopos_exigidos}. "
-                              f"Token contém: {escopos_do_usuario}.",
+                    "detail": f"Você não pode acessar este recurso.",
                 },
             )
         return usuario
     return verificador
+
+

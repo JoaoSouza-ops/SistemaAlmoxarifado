@@ -1,5 +1,5 @@
 # Arquivo: app/routers/board.py
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 # Importamos nossa conexão com o banco e nossos modelos/schemas
@@ -46,3 +46,39 @@ def listar_notas(db: Session = Depends(get_db)):
     notas = db.query(NotaBoardModel).all()
     
     return notas
+
+# ─── ROTA PARA EDITAR NOTA (PUT) ─────────────────────────────────────────────
+@router.put("/notas/{nota_id}", status_code=200)
+def editar_nota(nota_id: int, nota: NotaBoard, db: Session = Depends(get_db)):
+    """Atualiza os campos de uma nota existente pelo ID."""
+    
+    # 1. Busca a nota no banco. Se não achar, retorna 404.
+    nota_existente = db.query(NotaBoardModel).filter(NotaBoardModel.id == nota_id).first()
+    if not nota_existente:
+        raise HTTPException(status_code=404, detail=f"Nota {nota_id} não encontrada.")
+    
+    # 2. Atualiza os campos com os valores recebidos
+    nota_existente.titulo    = nota.titulo
+    nota_existente.descricao = nota.descricao
+    nota_existente.categoria = nota.categoria.value
+    nota_existente.fixado    = nota.fixado
+    
+    # 3. Salva no banco e retorna o objeto atualizado
+    db.commit()
+    db.refresh(nota_existente)
+    return nota_existente
+
+
+# ─── ROTA PARA EXCLUIR NOTA (DELETE) ─────────────────────────────────────────
+@router.delete("/notas/{nota_id}", status_code=204)
+def excluir_nota(nota_id: int, db: Session = Depends(get_db)):
+    """Remove uma nota pelo ID. Retorna 204 (sem conteúdo) em caso de sucesso."""
+    
+    nota_existente = db.query(NotaBoardModel).filter(NotaBoardModel.id == nota_id).first()
+    if not nota_existente:
+        raise HTTPException(status_code=404, detail=f"Nota {nota_id} não encontrada.")
+    
+    db.delete(nota_existente)
+    db.commit()
+    # Retorno vazio — status 204 não tem body
+    return

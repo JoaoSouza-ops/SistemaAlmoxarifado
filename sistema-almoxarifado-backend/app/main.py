@@ -1,6 +1,8 @@
 # Arquivo: app/main.py — v2.1.0 (com CORS para frontend)
 import uuid
 from fastapi import FastAPI, Request, Response
+from fastapi.exceptions import HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -10,6 +12,9 @@ from app.routers import transferencia
 from app.routers import auth
 from app.routers import jobs
 from app.routers import setores
+from app.routers import usuarios
+from app.routers import dashboard
+from app.routers import setor
 
 from app.database import engine
 from app.models import board as models_board
@@ -41,7 +46,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    #expose_headers=["X-Correlation-ID", "Location"],
+    expose_headers=["X-Correlation-ID", "Location"],
 )
 
 # ─── X-Correlation-ID ─────────────────────────────────────────────────────────
@@ -54,6 +59,26 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(CorrelationIDMiddleware)
 
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        media_type="application/problem+json",
+        content={
+            "type":   f"https://api.almoxarifado.gov.br/erros/{exc.status_code}",
+            "title":  {
+                400: "Requisição inválida",
+                401: "Não autorizado",
+                403: "Sem permissão",
+                404: "Não encontrado",
+                409: "Conflito",
+                422: "Dados inválidos",
+            }.get(exc.status_code, "Erro"),
+            "status": exc.status_code,
+            "detail": exc.detail if isinstance(exc.detail, str) else str(exc.detail),
+        },
+    )
+
 @app.get("/", tags=["Health"])
 def health_check():
     return {"status": "SGM Backend Operacional", "versao": "2.1.0"}
@@ -62,5 +87,8 @@ app.include_router(board.router)
 app.include_router(patrimonio.router)
 app.include_router(transferencia.router)
 app.include_router(setores.router)
-app.include_router(jobs.router)
 app.include_router(auth.router)
+app.include_router(usuarios.router)
+app.include_router(jobs.router)
+app.include_router(dashboard.router)
+app.include_router(setor.router)

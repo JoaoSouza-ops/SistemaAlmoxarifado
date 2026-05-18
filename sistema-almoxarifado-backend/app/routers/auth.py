@@ -26,8 +26,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
     if not usuario.ativo:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário inativo. Contate o administrador.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     # ─── Resolve escopos ──────────────────────────────────────────────────────
